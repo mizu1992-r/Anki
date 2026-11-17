@@ -1,0 +1,1272 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>暗記アプリ</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#f5f3ee; --card:#ffffff; --ink:#1f2328; --sub:#6b6f76; --line:#e3e0d8;
+  --accent:#2f6f5e; --accent-soft:#e3efe9; --ok:#2e7d4f; --ok-soft:#e4f3e9;
+  --ng:#b3412f; --ng-soft:#f8e6e2; --warn:#9a6a12; --folder:#c99a2e;
+  --r:14px;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--ink);font-family:"Noto Sans JP",system-ui,-apple-system,sans-serif;font-size:16px;line-height:1.6}
+button,input,select,textarea{font:inherit;color:inherit}
+.wrap{max-width:760px;margin:0 auto;padding:16px 16px 80px}
+header{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:4px 0 14px}
+h1{font-size:20px;margin:0;letter-spacing:.02em}
+.sync{font-size:12px;color:var(--sub);text-align:right}
+.tabs{display:flex;background:#e9e6de;border-radius:12px;padding:4px;gap:4px;margin-bottom:16px}
+.tabs button{flex:1;border:0;background:transparent;padding:10px;border-radius:9px;font-weight:500;color:var(--sub);cursor:pointer}
+.tabs button.on{background:var(--card);color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.08)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:18px;margin-bottom:14px}
+.card h2{font-size:16px;margin:0 0 12px}
+label.f{display:block;font-size:13px;color:var(--sub);margin:12px 0 6px;font-weight:500}
+input[type=text],input[type=search],textarea,select{width:100%;border:1px solid var(--line);border-radius:10px;padding:10px 12px;background:#fff;outline:none}
+input:focus,textarea:focus,select:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+textarea{resize:vertical;min-height:72px}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.seg button{border:0;background:#fff;padding:8px 16px;cursor:pointer;color:var(--sub)}
+.seg button.on{background:var(--accent);color:#fff}
+.btn{border:1px solid var(--line);background:#fff;border-radius:10px;padding:10px 16px;cursor:pointer;font-weight:500;white-space:nowrap}
+.btn:hover{background:#faf9f6}
+.btn.pri{background:var(--accent);border-color:var(--accent);color:#fff}
+.btn.pri:hover{filter:brightness(1.05)}
+.btn.sm{padding:6px 12px;font-size:14px}
+.btn.ghost{border-color:transparent;background:transparent;color:var(--sub)}
+.btn.ghost:hover{background:#f1efe9}
+.btn.danger{color:var(--ng)}
+.btn.danger.armed{background:var(--ng);color:#fff;border-color:var(--ng)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.row.end{justify-content:flex-end}
+.spacer{flex:1}
+.choice-row{display:flex;gap:8px;align-items:center;margin-bottom:8px}
+.choice-row input[type=text]{flex:1}
+.choice-row .rad{display:flex;align-items:center;gap:4px;font-size:13px;color:var(--sub);white-space:nowrap;cursor:pointer}
+.choice-row .x{border:0;background:transparent;color:var(--sub);font-size:20px;cursor:pointer;padding:0 6px;line-height:1}
+.hint{font-size:12px;color:var(--sub);margin-top:4px}
+.err{color:var(--ng);font-size:14px;margin-top:10px;min-height:1em}
+.msg-ok{color:var(--ok);font-size:14px}
+.item{border-top:1px solid var(--line);padding:12px 0}
+.item:first-child{border-top:0}
+.item .meta{display:flex;gap:6px;align-items:center;font-size:12px;color:var(--sub);margin-bottom:4px;flex-wrap:wrap}
+.badge{display:inline-block;font-size:11px;padding:1px 8px;border-radius:6px;background:var(--accent-soft);color:var(--accent);font-weight:500}
+.badge.t{background:#efe9dc;color:var(--warn)}
+.item .q{white-space:pre-wrap;word-break:break-word}
+.item .a{font-size:13px;color:var(--sub);margin-top:2px;word-break:break-word}
+.item .path{font-size:12px;color:var(--sub)}
+.stat-ok{color:var(--ok)} .stat-ng{color:var(--ng)}
+.empty{color:var(--sub);text-align:center;padding:20px 0;font-size:15px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:0 12px}
+@media (max-width:520px){.grid2{grid-template-columns:1fr}}
+.check{display:flex;align-items:center;gap:8px;margin-top:12px;cursor:pointer;font-size:15px}
+.check input{width:18px;height:18px;accent-color:var(--accent)}
+.avail{font-size:14px;color:var(--sub)}
+/* folders */
+.crumbs{display:flex;flex-wrap:wrap;align-items:center;gap:2px;font-size:14px;margin-bottom:10px}
+.crumbs button{border:0;background:transparent;color:var(--accent);cursor:pointer;padding:2px 6px;border-radius:6px}
+.crumbs button:hover{background:var(--accent-soft)}
+.crumbs .sep{color:var(--sub)}
+.crumbs .cur{font-weight:700;padding:2px 6px}
+.fhead{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+.fhead h2{margin:0;font-size:18px;word-break:break-word}
+.folders{display:flex;flex-direction:column;gap:6px}
+.folder{display:flex;align-items:center;gap:12px;border:1px solid var(--line);border-radius:12px;padding:12px 14px;cursor:pointer;background:#fff;text-align:left;width:100%}
+.folder:hover{border-color:var(--folder);background:#fffbf1}
+.folder .ic{flex:none;width:30px;height:24px;position:relative}
+.folder .ic::before{content:"";position:absolute;left:0;top:0;width:13px;height:6px;background:var(--folder);border-radius:3px 3px 0 0}
+.folder .ic::after{content:"";position:absolute;left:0;top:4px;width:30px;height:20px;background:var(--folder);border-radius:3px 5px 5px 5px;opacity:.85}
+.folder .nm{flex:1;font-weight:500;word-break:break-word}
+.folder .ct{font-size:13px;color:var(--sub);white-space:nowrap}
+.folder .chev{color:var(--sub);font-size:18px}
+.newfolder{display:flex;gap:8px;margin-top:10px}
+.newfolder input{flex:1}
+.section-t{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:20px 0 6px;padding-top:16px;border-top:1px solid var(--line)}
+.section-t h3{margin:0;font-size:15px}
+.section-t .c{color:var(--sub);font-weight:400}
+/* quiz */
+.prog{height:6px;background:#e9e6de;border-radius:99px;overflow:hidden;margin-bottom:10px}
+.prog i{display:block;height:100%;background:var(--accent);transition:width .25s}
+.qhead{display:flex;justify-content:space-between;gap:10px;font-size:13px;color:var(--sub);margin-bottom:8px}
+.qtext{font-size:19px;font-weight:500;white-space:pre-wrap;word-break:break-word;margin:6px 0 18px}
+.opts{display:flex;flex-direction:column;gap:8px}
+.opt{display:flex;gap:10px;align-items:flex-start;text-align:left;border:1.5px solid var(--line);background:#fff;border-radius:12px;padding:12px 14px;cursor:pointer;font-size:16px;word-break:break-word}
+.opt:hover:not(:disabled){border-color:var(--accent)}
+.opt .k{flex:none;width:24px;height:24px;border-radius:7px;background:#efede7;color:var(--sub);font-size:13px;display:flex;align-items:center;justify-content:center;font-weight:700}
+.opt.correct{border-color:var(--ok);background:var(--ok-soft)}
+.opt.correct .k{background:var(--ok);color:#fff}
+.opt.wrong{border-color:var(--ng);background:var(--ng-soft)}
+.opt.wrong .k{background:var(--ng);color:#fff}
+.opt:disabled{cursor:default}
+.fb{margin-top:16px;padding:12px 14px;border-radius:12px;display:none}
+.fb.show{display:block}
+.fb.ok{background:var(--ok-soft)} .fb.ng{background:var(--ng-soft)}
+.fb .ttl{font-weight:700}
+.fb.ok .ttl{color:var(--ok)} .fb.ng .ttl{color:var(--ng)}
+.fb .note{margin-top:6px;white-space:pre-wrap;font-size:14px}
+.score{font-size:44px;font-weight:700;text-align:center;margin:8px 0 0}
+.score small{font-size:16px;color:var(--sub);font-weight:400}
+.wlist .w{border-top:1px solid var(--line);padding:10px 0}
+.wlist .w:first-child{border-top:0}
+.wlist .yours{font-size:13px;color:var(--ng)}
+.wlist .right{font-size:13px;color:var(--ok)}
+.hidden{display:none !important}
+details summary{cursor:pointer;color:var(--sub);font-size:14px}
+.kbd{font-size:12px;color:var(--sub);margin-top:10px}
+/* screenshot import */
+.drop{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;border:2px dashed var(--line);border-radius:12px;padding:22px 12px;margin-top:12px;cursor:pointer;color:var(--sub);text-align:center;background:#fcfbf8}
+.drop:hover,.drop.over{border-color:var(--accent);background:var(--accent-soft);color:var(--accent)}
+.drop b{color:var(--ink);font-weight:500}
+.thumbs{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.thumb{position:relative;width:84px;height:84px;border-radius:10px;overflow:hidden;border:1px solid var(--line);background:#eee}
+.thumb img{width:100%;height:100%;object-fit:cover;display:block}
+.thumb button{position:absolute;top:3px;right:3px;width:22px;height:22px;border-radius:50%;border:0;background:rgba(0,0,0,.6);color:#fff;font-size:14px;line-height:22px;padding:0;cursor:pointer}
+.ext{border:1px solid var(--line);border-radius:12px;padding:12px;margin-top:10px;background:#fff}
+.ext.bad{border-color:var(--ng)}
+.ext.off{opacity:.5}
+.ext textarea{min-height:52px;margin:8px 0}
+.ext .seg button{padding:4px 12px;font-size:13px}
+.badge.g{background:#fdf1d6;color:var(--warn)}
+.warnline{font-size:13px;color:var(--warn);margin-top:2px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>暗記アプリ</h1>
+    <div class="row" style="gap:10px;flex-wrap:nowrap">
+      <span class="sync" id="sync">読み込み中…</span>
+      <button class="btn sm" id="open-settings" title="設定">⚙ 設定</button>
+    </div>
+  </header>
+  <div class="card hidden" id="settings">
+    <h2>設定</h2>
+    <div id="share-box" class="hidden" style="margin-bottom:6px">
+      <label class="f" style="margin-top:0">友達に送るリンク</label>
+      <div class="row" style="flex-wrap:nowrap">
+        <input type="text" id="share-url" readonly>
+        <button class="btn sm" id="share-copy">コピー</button>
+      </div>
+      <div class="hint">このリンクを開いた人は、ログインなしで問題を解けます（問題の変更はできません）。</div>
+    </div>
+    <div class="hint" style="margin-top:12px">問題を作る・直すのは、GitHubのトークンを入れた端末だけです。PCとiPhoneの両方で作りたいときは、両方に同じトークンを入れてください。</div>
+    <div class="grid2">
+      <div><label class="f" for="g-owner">GitHubのユーザー名</label><input type="text" id="g-owner" autocapitalize="off" autocomplete="off"></div>
+      <div><label class="f" for="g-repo">リポジトリ名</label><input type="text" id="g-repo" autocapitalize="off" autocomplete="off"></div>
+    </div>
+    <label class="f" for="g-token">トークン（ghp_ または github_pat_ で始まる文字列）</label>
+    <input type="text" id="g-token" autocapitalize="off" autocomplete="off" spellcheck="false" placeholder="友達の端末では空のままにする" style="font-family:ui-monospace,monospace;-webkit-text-security:disc">
+    <details style="margin-top:8px"><summary>くわしい設定</summary>
+      <label class="f" for="g-branch">ブランチ</label><input type="text" id="g-branch" placeholder="main" autocapitalize="off">
+      <label class="f" for="g-path">保存するファイル名</label><input type="text" id="g-path" placeholder="data.json" autocapitalize="off">
+    </details>
+    <div class="err" id="g-msg"></div>
+    <div class="row" style="margin-top:6px">
+      <button class="btn sm danger" id="g-logout">この端末のトークンを消す</button>
+      <span class="spacer"></span>
+      <button class="btn" id="g-close">閉じる</button>
+      <button class="btn pri" id="g-save">保存して接続</button>
+    </div>
+  </div>
+
+  <nav class="tabs">
+    <button id="tab-edit" class="on">問題をつくる</button>
+    <button id="tab-study">学習する</button>
+  </nav>
+
+  <!-- ============ 問題をつくる ============ -->
+  <section id="view-edit">
+    <div class="card" id="browser">
+      <div class="crumbs" id="crumbs"></div>
+      <div class="fhead" id="fhead"></div>
+      <div id="rename-row" class="newfolder hidden">
+        <input type="text" id="rename-input" placeholder="フォルダ名">
+        <button class="btn sm" id="rename-cancel">やめる</button>
+        <button class="btn sm pri" id="rename-ok">変更</button>
+      </div>
+
+      <div class="folders" id="folders"></div>
+      <div id="new-folder-wrap">
+        <button class="btn sm" id="new-folder-btn" style="margin-top:10px">＋ フォルダを作成</button>
+        <div class="newfolder hidden" id="new-folder-row">
+          <input type="text" id="new-folder-input" placeholder="フォルダ名（例：情報セキュリティ）">
+          <button class="btn sm" id="new-folder-cancel">やめる</button>
+          <button class="btn sm pri" id="new-folder-ok">作成</button>
+        </div>
+        <div class="err" id="folder-err"></div>
+      </div>
+
+      <div id="q-section" class="hidden">
+        <div class="section-t">
+          <h3>問題 <span class="c" id="q-count"></span></h3>
+          <span class="spacer"></span>
+          <button class="btn sm" id="study-here">このフォルダで学習</button>
+          <button class="btn sm pri" id="add-q-btn">＋ 問題を追加</button>
+        </div>
+        <input type="search" id="search" placeholder="このフォルダ内（サブフォルダ含む）を検索" style="margin:6px 0 4px">
+        <div id="list"></div>
+      </div>
+    </div>
+
+    <div class="card hidden" id="form-card">
+      <div class="row">
+        <h2 id="form-title" style="margin:0">問題を追加</h2>
+        <span class="spacer"></span>
+        <span class="hint" id="form-where" style="margin:0"></span>
+      </div>
+      <div class="row" style="margin-top:12px">
+        <div class="seg" id="type-seg">
+          <button data-t="choice" class="on">選択式</button>
+          <button data-t="text">記述式</button>
+        </div>
+      </div>
+
+      <label class="f" for="f-q">問題文</label>
+      <textarea id="f-q" placeholder="問題文を入力"></textarea>
+
+      <div id="choice-area">
+        <label class="f">選択肢（正解に ● をつける）</label>
+        <div id="choices"></div>
+        <button class="btn sm" id="add-choice">＋ 選択肢を追加</button>
+      </div>
+
+      <div id="text-area" class="hidden">
+        <label class="f" for="f-answer">正解</label>
+        <textarea id="f-answer" placeholder="正解を入力"></textarea>
+        <div class="hint">別の書き方も正解にしたいときは、改行して1行ずつ書く（例：共通鍵暗号 / 秘密鍵暗号）。全角・半角、大文字・小文字、空白の違いは気にせず判定します。</div>
+      </div>
+
+      <label class="f" for="f-note">解説・メモ（任意）</label>
+      <textarea id="f-note" style="min-height:52px" placeholder="答えのあとに表示されます"></textarea>
+
+      <div id="move-wrap" class="hidden">
+        <label class="f" for="f-folder">入れるフォルダ</label>
+        <select id="f-folder"></select>
+      </div>
+
+      <div class="err" id="form-err"></div>
+      <div class="row end">
+        <span class="msg-ok" id="form-ok"></span>
+        <span class="spacer"></span>
+        <button class="btn" id="cancel-edit">閉じる</button>
+        <button class="btn pri" id="save-q">追加する</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <details>
+        <summary>バックアップ（書き出し・読み込み）</summary>
+        <div class="hint" style="margin-top:8px">今開いているフォルダの中身（サブフォルダごと）をテキストで書き出します。読み込むと、今開いているフォルダの中に追加されます。Claude版から移すときは、Claude版のホームで「書き出す」→コピー→こちらのホームに貼り付けて「読み込んで追加」。</div>
+        <textarea id="io" style="margin-top:10px;min-height:110px;font-family:ui-monospace,monospace;font-size:12px"></textarea>
+        <div class="row" style="margin-top:8px">
+          <button class="btn sm" id="export">書き出す</button>
+          <button class="btn sm" id="copy">コピー</button>
+          <span class="spacer"></span>
+          <button class="btn sm" id="import-add">読み込んで追加</button>
+        </div>
+        <div class="err" id="io-msg" style="color:var(--sub)"></div>
+      </details>
+    </div>
+  </section>
+
+  <!-- ============ 学習する ============ -->
+  <section id="view-study" class="hidden">
+    <div class="card" id="setup">
+      <h2>出題の設定</h2>
+      <label class="f" for="s-folder">フォルダ</label>
+      <select id="s-folder"></select>
+      <label class="check"><input type="checkbox" id="s-sub" checked> サブフォルダの問題もふくめる</label>
+      <div class="grid2">
+        <div>
+          <label class="f" for="s-type">形式</label>
+          <select id="s-type">
+            <option value="all">すべて</option>
+            <option value="choice">選択式だけ</option>
+            <option value="text">記述式だけ</option>
+          </select>
+        </div>
+        <div>
+          <label class="f" for="s-range">範囲</label>
+          <select id="s-range">
+            <option value="all">すべての問題</option>
+            <option value="wrong">前回まちがえた問題</option>
+            <option value="weak">正答率が低い問題（70%未満）</option>
+            <option value="new">まだ解いていない問題</option>
+          </select>
+        </div>
+        <div>
+          <label class="f" for="s-num">出題数</label>
+          <select id="s-num">
+            <option value="0">すべて</option>
+            <option value="5">5問</option>
+            <option value="10">10問</option>
+            <option value="20">20問</option>
+            <option value="30">30問</option>
+          </select>
+        </div>
+      </div>
+      <label class="check"><input type="checkbox" id="s-random" checked> 問題の順番をシャッフル</label>
+      <label class="check"><input type="checkbox" id="s-shuffle" checked> 選択肢の順番をシャッフル</label>
+      <div class="row" style="margin-top:18px">
+        <span class="avail" id="avail"></span>
+        <span class="spacer"></span>
+        <button class="btn pri" id="start">スタート</button>
+      </div>
+    </div>
+
+    <div class="card hidden" id="quiz">
+      <div class="prog"><i id="prog-bar" style="width:0"></i></div>
+      <div class="qhead"><span id="q-pos"></span><span id="q-subj"></span></div>
+      <div class="qtext" id="q-text"></div>
+      <div class="opts" id="q-opts"></div>
+      <div id="q-textans" class="hidden">
+        <input type="text" id="q-input" placeholder="答えを入力" autocomplete="off" autocapitalize="off">
+        <div class="row" style="margin-top:10px">
+          <button class="btn" id="q-giveup">わからない</button>
+          <span class="spacer"></span>
+          <button class="btn pri" id="q-check">答え合わせ</button>
+        </div>
+      </div>
+      <div class="fb" id="fb">
+        <div class="ttl" id="fb-ttl"></div>
+        <div id="fb-ans"></div>
+        <div class="note" id="fb-note"></div>
+        <div class="row" style="margin-top:8px">
+          <button class="btn sm hidden" id="fb-override">自分の答えで正解にする</button>
+        </div>
+      </div>
+      <div class="row" style="margin-top:16px">
+        <button class="btn sm" id="q-quit">やめる</button>
+        <span class="spacer"></span>
+        <button class="btn pri hidden" id="q-next">次へ</button>
+      </div>
+      <div class="kbd" id="kbd-hint"></div>
+    </div>
+
+    <div class="card hidden" id="result">
+      <h2>結果</h2>
+      <div class="score" id="r-score"></div>
+      <div style="text-align:center;color:var(--sub);margin-bottom:16px" id="r-detail"></div>
+      <div id="r-wrong-wrap">
+        <h2 style="margin-top:8px">まちがえた問題</h2>
+        <div class="wlist" id="r-wrong"></div>
+      </div>
+      <div class="row" style="margin-top:16px">
+        <button class="btn" id="r-back">設定にもどる</button>
+        <span class="spacer"></span>
+        <button class="btn pri" id="r-retry">まちがえた問題をもう一度</button>
+      </div>
+    </div>
+  </section>
+</div>
+
+<script>
+(function(){
+"use strict";
+const LS_KEY = "anki-gh-data";
+const STATS_KEY = "anki-gh-stats";
+const CFG_KEY = "anki-gh-config";
+const $ = id => document.getElementById(id);
+const state = { folders: [], items: [], updatedAt: 0 };
+
+/* ---------- データの整形・移行 ---------- */
+function normalizeData(d){
+  const folders = Array.isArray(d.folders) ? d.folders.filter(f=>f && f.id && typeof f.name==="string") : [];
+  const items = Array.isArray(d.items) ? d.items.filter(i=>i && i.id) : [];
+  const ids = new Set(folders.map(f=>f.id));
+  folders.forEach(f=>{ if(f.parent && !ids.has(f.parent)) f.parent = null; if(!f.parent) f.parent = null; });
+  // 旧バージョン（科目欄）からの移行
+  const byName = {};
+  items.forEach(it=>{
+    if(it.folderId && ids.has(it.folderId)) { delete it.subject; return; }
+    const name = (it.subject||"").trim() || "未分類";
+    let f = folders.find(x=>!x.parent && x.name===name) || byName[name];
+    if(!f){ f = { id: uid(), name, parent: null, created: Date.now() }; folders.push(f); ids.add(f.id); byName[name]=f; }
+    it.folderId = f.id; delete it.subject;
+  });
+  items.forEach(it=>{
+    if((it.ok||it.ng) && !stats[it.id]) stats[it.id] = { ok: it.ok||0, ng: it.ng||0, last: it.last ?? null };
+    delete it.ok; delete it.ng; delete it.last;
+  });
+  return { folders, items };
+}
+function applyData(d){
+  const n = normalizeData(JSON.parse(JSON.stringify(d)));
+  state.folders = n.folders; state.items = n.items; state.updatedAt = d.updatedAt||0;
+}
+
+/* ---------- 成績（この端末だけに保存） ---------- */
+let stats = {};
+try{ stats = JSON.parse(localStorage.getItem(STATS_KEY) || "{}") || {}; }catch(e){ stats = {}; }
+function st(it){ const x = stats[it.id]; return { ok: (x && x.ok) || 0, ng: (x && x.ng) || 0, last: x ? (x.last ?? null) : null }; }
+function saveStats(){ try{ localStorage.setItem(STATS_KEY, JSON.stringify(stats)); }catch(e){} }
+
+/* ---------- 問題データ（GitHubに保存） ---------- */
+let localPending = false; // GitHubにまだ送っていない変更があるか
+function saveLocal(){
+  try{ localStorage.setItem(LS_KEY, JSON.stringify({ folders: state.folders, items: state.items, updatedAt: state.updatedAt, pending: localPending })); }catch(e){}
+}
+function loadLocal(){
+  try{
+    const raw = localStorage.getItem(LS_KEY);
+    if(raw){ const d = JSON.parse(raw); applyData(d); localPending = !!d.pending; }
+  }catch(e){}
+}
+function setSync(t){ $("sync").textContent = t; }
+
+let cfg = {};
+try{ cfg = JSON.parse(localStorage.getItem(CFG_KEY) || "{}") || {}; }catch(e){ cfg = {}; }
+function saveCfg(){ try{ localStorage.setItem(CFG_KEY, JSON.stringify(cfg)); }catch(e){} }
+
+// https://ユーザー名.github.io/リポジトリ名/ から自動で読み取る
+function siteRepo(){
+  const h = location.hostname;
+  if(!h.endsWith(".github.io")) return null;
+  const owner = h.slice(0, -".github.io".length);
+  const seg = location.pathname.split("/").filter(Boolean)[0];
+  const repo = seg && !/\.html?$/i.test(seg) ? seg : h;
+  return { owner, repo };
+}
+function target(){
+  const g = siteRepo() || {};
+  return {
+    owner: cfg.owner || g.owner || "",
+    repo: cfg.repo || g.repo || "",
+    branch: cfg.branch || "main",
+    path: cfg.path || "data.json",
+    token: cfg.token || ""
+  };
+}
+function canEdit(){ const t = target(); return !!(t.token && t.owner && t.repo); }
+
+function b64enc(str){
+  const bytes = new TextEncoder().encode(str);
+  let bin = "";
+  for(let i=0;i<bytes.length;i+=0x8000) bin += String.fromCharCode.apply(null, bytes.subarray(i, i+0x8000));
+  return btoa(bin);
+}
+function b64dec(b){
+  const bin = atob(b.replace(/\s/g,""));
+  const u = new Uint8Array(bin.length);
+  for(let i=0;i<bin.length;i++) u[i] = bin.charCodeAt(i);
+  return new TextDecoder().decode(u);
+}
+function apiUrl(t){
+  return "https://api.github.com/repos/" + encodeURIComponent(t.owner) + "/" + encodeURIComponent(t.repo)
+    + "/contents/" + t.path.split("/").map(encodeURIComponent).join("/");
+}
+function ghHeaders(t){
+  const h = { "Accept": "application/vnd.github+json" };
+  if(t.token) h.Authorization = "Bearer " + t.token;
+  return h;
+}
+
+let remoteSha = null;
+async function fetchRemote(){
+  const t = target();
+  if(t.owner && t.repo){
+    try{
+      const r = await fetch(apiUrl(t) + "?ref=" + encodeURIComponent(t.branch) + "&t=" + Date.now(), { headers: ghHeaders(t), cache: "no-store" });
+      if(r.status === 404) return { missing: true };
+      if(r.status === 401) return { error: "token" };
+      if(r.ok){
+        const j = await r.json();
+        remoteSha = j.sha;
+        let text;
+        if(j.content) text = b64dec(j.content);
+        else { const r2 = await fetch(j.download_url + "?t=" + Date.now(), { cache: "no-store" }); text = await r2.text(); }
+        return { data: JSON.parse(text) };
+      }
+    }catch(e){}
+  }
+  // 予備：同じサイトに置いた data.json を直接読む
+  try{
+    const r = await fetch(t.path + "?t=" + Date.now(), { cache: "no-store" });
+    if(r.ok) return { data: await r.json() };
+    if(r.status === 404) return { missing: true };
+  }catch(e){}
+  return { error: "network" };
+}
+async function refreshSha(t){
+  try{
+    const r = await fetch(apiUrl(t) + "?ref=" + encodeURIComponent(t.branch) + "&t=" + Date.now(), { headers: ghHeaders(t), cache: "no-store" });
+    if(r.status === 404) remoteSha = null;
+    else if(r.ok) remoteSha = (await r.json()).sha;
+  }catch(e){}
+}
+function putFile(t, text){
+  const body = { message: "問題を更新", content: b64enc(text), branch: t.branch };
+  if(remoteSha) body.sha = remoteSha;
+  return fetch(apiUrl(t), { method: "PUT", headers: Object.assign({ "Content-Type": "application/json" }, ghHeaders(t)), body: JSON.stringify(body) });
+}
+
+let saveTimer = null, saving = false, dirty = false;
+function persist(){
+  state.updatedAt = Date.now();
+  localPending = true;
+  saveLocal();
+  dirty = true;
+  clearTimeout(saveTimer);
+  setSync("保存待ち…");
+  saveTimer = setTimeout(flush, 1500);
+}
+async function flush(){
+  saveTimer = null;
+  if(saving || !dirty) return;
+  if(!canEdit()){ setSync("この端末にだけ保存（設定でトークンを入れてください）"); return; }
+  saving = true; dirty = false;
+  setSync("GitHubに保存中…");
+  const t = target();
+  const text = JSON.stringify({ folders: state.folders, items: state.items, updatedAt: state.updatedAt }, null, 1);
+  let ok = false;
+  try{
+    let res = await putFile(t, text);
+    if(res.status === 409 || res.status === 422){ await refreshSha(t); res = await putFile(t, text); }
+    if(res.ok){
+      const j = await res.json();
+      remoteSha = j.content && j.content.sha;
+      ok = true;
+      if(!dirty){ localPending = false; saveLocal(); }
+      setSync("保存済み");
+    }else if(res.status === 401 || res.status === 403 || res.status === 404){
+      dirty = true;
+      setSync("保存できません：トークンの権限を確認してください");
+    }else{
+      dirty = true;
+      setSync("保存に失敗しました（次の変更のときにもう一度送ります）");
+    }
+  }catch(e){
+    dirty = true;
+    setSync("オフライン：つながったら保存します");
+  }
+  saving = false;
+  if(ok && dirty) flush();
+}
+
+async function connect(){
+  if(saving) return;
+  if(!state.items.length && !state.folders.length) setSync("読み込み中…");
+  const r = await fetchRemote();
+  if(saving || dirty) return;
+  if(r.data){
+    const remoteAt = r.data.updatedAt || 0;
+    if(localPending && canEdit() && state.updatedAt >= remoteAt){
+      dirty = true; flush();
+    }else{
+      if(remoteAt !== state.updatedAt || localPending){
+        applyData(r.data); localPending = false; saveLocal(); refreshAll();
+      }
+      setSync(canEdit() ? "保存済み" : "最新の問題です");
+    }
+  }else if(r.missing){
+    if(canEdit() && (state.items.length || state.folders.length)){ dirty = true; flush(); }
+    else setSync("まだ問題がありません");
+  }else if(r.error === "token"){
+    setSync("トークンが無効です。設定を確認してください");
+  }else{
+    setSync(state.items.length ? "オフライン（前回の問題を表示中）" : "問題を読み込めませんでした");
+  }
+}
+window.addEventListener("online", ()=>{ if(dirty) flush(); else connect(); });
+document.addEventListener("visibilitychange", ()=>{
+  if(document.visibilityState !== "visible") return;
+  if(dirty) flush();
+  else if(!editingId && !quiz) connect();
+});
+window.addEventListener("beforeunload", e=>{ if(dirty || saving){ e.preventDefault(); e.returnValue = ""; } });
+
+/* ---------- 編集できる端末かどうか ---------- */
+function applyMode(){
+  const ed = canEdit();
+  document.querySelector(".tabs").classList.toggle("hidden", !ed);
+  if(!ed && !$("view-edit").classList.contains("hidden")) showTab("study");
+}
+
+/* ---------- 設定 ---------- */
+function openSettings(){
+  const t = target();
+  $("g-owner").value = t.owner; $("g-repo").value = t.repo;
+  $("g-token").value = cfg.token || "";
+  $("g-branch").value = cfg.branch || ""; $("g-path").value = cfg.path || "";
+  gMsg("");
+  const sr = siteRepo();
+  $("share-box").classList.toggle("hidden", !sr);
+  if(sr) $("share-url").value = location.origin + location.pathname.replace(/index\.html?$/i, "");
+  $("settings").classList.remove("hidden");
+}
+function gMsg(t, good){ const m = $("g-msg"); m.textContent = t; m.style.color = good ? "var(--ok)" : ""; }
+$("open-settings").onclick = ()=>{ if($("settings").classList.contains("hidden")) openSettings(); else $("settings").classList.add("hidden"); };
+$("g-close").onclick = ()=> $("settings").classList.add("hidden");
+$("share-copy").onclick = async ()=>{
+  try{ await navigator.clipboard.writeText($("share-url").value); gMsg("リンクをコピーしました", true); }
+  catch(e){ $("share-url").select(); gMsg("選択しました。コピーしてください", true); }
+};
+$("g-save").onclick = async ()=>{
+  const n = {
+    owner: $("g-owner").value.trim(), repo: $("g-repo").value.trim(),
+    token: $("g-token").value.trim(), branch: $("g-branch").value.trim(), path: $("g-path").value.trim()
+  };
+  const sr = siteRepo();
+  if(sr && n.owner === sr.owner) n.owner = "";   // 自動で分かるものは保存しない
+  if(sr && n.repo === sr.repo) n.repo = "";
+  const tgt = Object.assign({}, target(), { owner: n.owner || (sr && sr.owner) || "", repo: n.repo || (sr && sr.repo) || "" });
+  if(!n.token){
+    cfg = n; saveCfg(); applyMode(); connect();
+    gMsg("トークンなしで保存しました（学習だけできます）", true);
+    return;
+  }
+  if(!tgt.owner || !tgt.repo){ gMsg("ユーザー名とリポジトリ名を入れてください"); return; }
+  gMsg("確認中…", true);
+  try{
+    const r = await fetch("https://api.github.com/repos/" + encodeURIComponent(tgt.owner) + "/" + encodeURIComponent(tgt.repo),
+      { headers: { "Accept": "application/vnd.github+json", "Authorization": "Bearer " + n.token }, cache: "no-store" });
+    if(r.status === 401){ gMsg("トークンが正しくありません（期限切れの可能性もあります）"); return; }
+    if(r.status === 404){ gMsg("リポジトリが見つかりません。名前と、トークンの対象リポジトリを確認してください"); return; }
+    if(!r.ok){ gMsg("確認できませんでした（" + r.status + "）"); return; }
+    const j = await r.json();
+    if(j.permissions && !j.permissions.push){ gMsg("このトークンではこのリポジトリに書き込めません"); return; }
+  }catch(e){ gMsg("GitHubに接続できませんでした"); return; }
+  cfg = n; saveCfg();
+  remoteSha = null;
+  applyMode();
+  gMsg("接続しました。この端末で問題を作れます", true);
+  showTab("edit");
+  connect();
+};
+$("g-logout").onclick = ()=>{
+  cfg.token = ""; saveCfg(); $("g-token").value = "";
+  applyMode();
+  gMsg("この端末のトークンを消しました。学習だけできる状態です", true);
+};
+
+/* ---------- ユーティリティ ---------- */
+function uid(){ return Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
+function el(tag, attrs, ...kids){
+  const n = document.createElement(tag);
+  if(attrs) for(const k in attrs){
+    if(k === "class") n.className = attrs[k];
+    else if(k.startsWith("on")) n.addEventListener(k.slice(2), attrs[k]);
+    else n.setAttribute(k, attrs[k]);
+  }
+  kids.forEach(c => { if(c==null) return; n.append(c.nodeType ? c : document.createTextNode(c)); });
+  return n;
+}
+function shuffle(a){ a = a.slice(); for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; }
+function norm(s){
+  return String(s||"").normalize("NFKC").toLowerCase()
+    .replace(/[\s　]+/g,"")
+    .replace(/[。、．，,.・「」『』"'（）()]/g,"");
+}
+function answerText(it){
+  if(it.type === "choice") return it.choices[it.answer] ?? "";
+  return (it.answers||[]).join(" / ");
+}
+const byName = (a,b)=> a.name.localeCompare(b.name, "ja", {numeric:true});
+function folderById(id){ return state.folders.find(f=>f.id===id) || null; }
+function childFolders(pid){ return state.folders.filter(f=>(f.parent||null)===(pid||null)).sort(byName); }
+function descendantIds(id){
+  const out = [id]; const stack=[id];
+  while(stack.length){ const cur = stack.pop(); state.folders.forEach(f=>{ if(f.parent===cur){ out.push(f.id); stack.push(f.id); } }); }
+  return out;
+}
+function pathOf(id){
+  const p = []; let f = folderById(id); let guard=0;
+  while(f && guard++<50){ p.unshift(f); f = folderById(f.parent); }
+  return p;
+}
+function pathText(id){ return pathOf(id).map(f=>f.name).join(" / "); }
+function countIn(id){ const s = new Set(descendantIds(id)); return state.items.filter(i=>s.has(i.folderId)).length; }
+function flatTree(){
+  const out=[];
+  (function walk(pid, depth){ childFolders(pid).forEach(f=>{ out.push({f, depth}); walk(f.id, depth+1); }); })(null,0);
+  return out;
+}
+
+/* ---------- タブ ---------- */
+function showTab(t){
+  $("tab-edit").classList.toggle("on", t==="edit");
+  $("tab-study").classList.toggle("on", t==="study");
+  $("view-edit").classList.toggle("hidden", t!=="edit");
+  $("view-study").classList.toggle("hidden", t!=="study");
+  if(t==="study" && !quiz) renderSetup();
+}
+$("tab-edit").onclick = ()=> showTab("edit");
+$("tab-study").onclick = ()=> showTab("study");
+
+/* ---------- フォルダブラウザ ---------- */
+let curFolder = null; // null = ホーム
+function openFolder(id){
+  curFolder = id && folderById(id) ? id : null;
+  $("search").value = ""; listFilter = "";
+  hideRename(); hideNewFolder();
+  if(!editingId) closeForm();
+  renderBrowser();
+  try{ $("browser").scrollIntoView({block:"nearest"}); }catch(e){}
+}
+
+function renderBrowser(){
+  if(curFolder && !folderById(curFolder)) curFolder = null;
+  // パンくず
+  const cr = $("crumbs"); cr.innerHTML = "";
+  const path = curFolder ? pathOf(curFolder) : [];
+  if(path.length){
+    cr.append(el("button",{onclick:()=>openFolder(null)},"ホーム"));
+    path.forEach((f,i)=>{
+      cr.append(el("span",{class:"sep"},"›"));
+      if(i===path.length-1) cr.append(el("span",{class:"cur"},f.name));
+      else cr.append(el("button",{onclick:()=>openFolder(f.id)}, f.name));
+    });
+  }
+  // 見出し
+  const fh = $("fhead"); fh.innerHTML = "";
+  if(curFolder){
+    const f = folderById(curFolder);
+    fh.append(el("h2",null,f.name), el("span",{class:"spacer"}));
+    fh.append(el("button",{class:"btn sm ghost",onclick:showRename},"名前を変更"));
+    fh.append(makeDeleteFolderBtn(f));
+  }else{
+    fh.append(el("h2",null,"ホーム"));
+  }
+  // フォルダ一覧
+  const box = $("folders"); box.innerHTML = "";
+  const kids = childFolders(curFolder);
+  if(!curFolder && !kids.length){
+    box.append(el("div",{class:"empty"},"まず科目のフォルダを作りましょう。"));
+  }
+  kids.forEach(f=>{
+    const n = countIn(f.id), sub = childFolders(f.id).length;
+    box.append(el("button",{class:"folder",type:"button",onclick:()=>openFolder(f.id)},
+      el("span",{class:"ic"}), el("span",{class:"nm"}, f.name),
+      el("span",{class:"ct"}, (sub? "フォルダ"+sub+"・":"") + n + "問"),
+      el("span",{class:"chev"},"›")));
+  });
+  $("new-folder-btn").textContent = curFolder ? "＋ この中にフォルダを作成" : "＋ 科目フォルダを作成";
+  $("q-section").classList.toggle("hidden", !curFolder);
+  if(curFolder) renderList();
+}
+
+function makeDeleteFolderBtn(f){
+  const b = el("button",{class:"btn sm danger",type:"button"},"削除");
+  let armed=false, t;
+  b.onclick = ()=>{
+    if(!armed){
+      const n = countIn(f.id), sub = descendantIds(f.id).length-1;
+      armed = true; b.classList.add("armed");
+      b.textContent = (n||sub) ? "中身（" + (sub?"フォルダ"+sub+"・":"") + n + "問）ごと削除" : "本当に削除";
+      t = setTimeout(()=>{ armed=false; b.classList.remove("armed"); b.textContent="削除"; }, 4000);
+      return;
+    }
+    clearTimeout(t);
+    const ids = new Set(descendantIds(f.id));
+    state.folders = state.folders.filter(x=>!ids.has(x.id));
+    state.items = state.items.filter(i=>!ids.has(i.folderId));
+    persist();
+    closeForm();
+    openFolder(f.parent);
+  };
+  return b;
+}
+
+// 新しいフォルダ
+function hideNewFolder(){ $("new-folder-row").classList.add("hidden"); $("new-folder-btn").classList.remove("hidden"); $("folder-err").textContent=""; }
+$("new-folder-btn").onclick = ()=>{
+  $("new-folder-btn").classList.add("hidden");
+  $("new-folder-row").classList.remove("hidden");
+  $("new-folder-input").value = ""; $("new-folder-input").focus();
+};
+$("new-folder-cancel").onclick = hideNewFolder;
+function createFolder(){
+  const name = $("new-folder-input").value.trim();
+  if(!name){ $("folder-err").textContent = "フォルダ名を入力してください"; return; }
+  if(childFolders(curFolder).some(f=>f.name===name)){ $("folder-err").textContent = "同じ名前のフォルダがすでにあります"; return; }
+  state.folders.push({ id: uid(), name, parent: curFolder, created: Date.now() });
+  persist();
+  hideNewFolder();
+  renderBrowser();
+}
+$("new-folder-ok").onclick = createFolder;
+$("new-folder-input").addEventListener("keydown", e=>{ if(e.key==="Enter" && !e.isComposing){ e.preventDefault(); createFolder(); } if(e.key==="Escape") hideNewFolder(); });
+
+// 名前の変更
+function showRename(){
+  const f = folderById(curFolder); if(!f) return;
+  $("rename-row").classList.remove("hidden");
+  $("rename-input").value = f.name; $("rename-input").focus(); $("rename-input").select();
+}
+function hideRename(){ $("rename-row").classList.add("hidden"); }
+function doRename(){
+  const f = folderById(curFolder); if(!f) return;
+  const name = $("rename-input").value.trim();
+  if(!name) return;
+  if(childFolders(f.parent).some(x=>x.id!==f.id && x.name===name)){ $("folder-err").textContent = "同じ名前のフォルダがすでにあります"; return; }
+  f.name = name; persist(); hideRename(); $("folder-err").textContent=""; renderBrowser();
+}
+$("rename-ok").onclick = doRename;
+$("rename-cancel").onclick = hideRename;
+$("rename-input").addEventListener("keydown", e=>{ if(e.key==="Enter" && !e.isComposing){ e.preventDefault(); doRename(); } if(e.key==="Escape") hideRename(); });
+
+$("study-here").onclick = ()=>{
+  showTab("study");
+  if(quiz) return;
+  $("s-folder").value = curFolder; updateAvail();
+};
+
+/* ---------- 問題リスト ---------- */
+let listFilter = "";
+$("search").addEventListener("input", e=>{ listFilter = e.target.value; renderList(); });
+
+function renderList(){
+  const box = $("list"); box.innerHTML = "";
+  if(!curFolder) return;
+  const direct = state.items.filter(i=>i.folderId===curFolder);
+  const f = norm(listFilter);
+  let items, showPath = false;
+  if(f){
+    const s = new Set(descendantIds(curFolder));
+    items = state.items.filter(it=> s.has(it.folderId) && norm(it.q + answerText(it) + (it.choices||[]).join("") + (it.note||"")).includes(f));
+    showPath = true;
+    $("q-count").textContent = "（検索結果 " + items.length + "問）";
+  }else{
+    items = direct;
+    const total = countIn(curFolder);
+    $("q-count").textContent = "（" + direct.length + "問" + (total>direct.length ? "／サブフォルダ含め" + total + "問" : "") + "）";
+  }
+  $("study-here").disabled = countIn(curFolder) === 0;
+  items = items.slice().sort((a,b)=>(a.created||0)-(b.created||0));
+  if(!items.length){
+    box.append(el("div",{class:"empty"}, f ? "見つかりませんでした" : "このフォルダにはまだ問題がありません。「＋ 問題を追加」から追加できます。"));
+    return;
+  }
+  items.forEach((it, idx)=>{
+    const del = el("button",{class:"btn sm danger",type:"button"},"削除");
+    let armed = false, t;
+    del.onclick = ()=>{
+      if(!armed){ armed = true; del.classList.add("armed"); del.textContent = "本当に削除"; t = setTimeout(()=>{ armed=false; del.classList.remove("armed"); del.textContent="削除"; }, 3000); return; }
+      clearTimeout(t);
+      state.items = state.items.filter(x=>x.id!==it.id);
+      if(editingId === it.id) closeForm();
+      persist(); renderBrowser();
+    };
+    const sx = st(it), total = sx.ok + sx.ng;
+    box.append(el("div",{class:"item"},
+      el("div",{class:"meta"},
+        el("span",null, showPath ? "" : "Q" + (idx+1)),
+        el("span",{class:"badge"+(it.type==="text"?" t":"")}, it.type==="choice"?"選択式":"記述式"),
+        total ? el("span",null, el("span",{class:"stat-ok"},"○"+sx.ok), " ", el("span",{class:"stat-ng"},"×"+sx.ng)) : el("span",null,"未回答"),
+        showPath && it.folderId!==curFolder ? el("span",{class:"path"}, "📁 " + pathText(it.folderId)) : null
+      ),
+      el("div",{class:"q"}, it.q),
+      el("div",{class:"a"}, "答え：" + answerText(it) + (it.type==="choice" ? "（" + it.choices.length + "択）" : "")),
+      el("div",{class:"row", style:"margin-top:6px"},
+        el("button",{class:"btn sm",type:"button",onclick:()=>fillForm(it)},"編集"),
+        del
+      )
+    ));
+  });
+}
+
+/* ---------- 問題フォーム ---------- */
+let formType = "choice";
+let editingId = null;
+
+function setType(t){
+  formType = t;
+  document.querySelectorAll("#type-seg button").forEach(b=> b.classList.toggle("on", b.dataset.t===t));
+  $("choice-area").classList.toggle("hidden", t!=="choice");
+  $("text-area").classList.toggle("hidden", t!=="text");
+}
+document.querySelectorAll("#type-seg button").forEach(b=> b.onclick = ()=> setType(b.dataset.t));
+
+function addChoiceRow(val, checked){
+  const box = $("choices");
+  const n = box.children.length;
+  const rad = el("input",{type:"radio",name:"correct"});
+  if(checked) rad.checked = true;
+  const inp = el("input",{type:"text",placeholder:"選択肢 " + (n+1)});
+  inp.value = val || "";
+  const row = el("div",{class:"choice-row"},
+    el("label",{class:"rad",title:"正解"}, rad, "正解"),
+    inp,
+    el("button",{class:"x",title:"削除",type:"button",onclick:()=>{ if(box.children.length>2){ row.remove(); renumber(); } }},"×")
+  );
+  inp.addEventListener("keydown", e=>{
+    if(e.key==="Enter" && !e.isComposing){ e.preventDefault();
+      const rows=[...box.children]; const idx=rows.indexOf(row);
+      if(idx===rows.length-1){ addChoiceRow("",false); box.lastChild.querySelector("input[type=text]").focus(); }
+      else rows[idx+1].querySelector("input[type=text]").focus();
+    }
+  });
+  box.append(row);
+}
+function renumber(){ [...$("choices").children].forEach((r,i)=> r.querySelector("input[type=text]").placeholder = "選択肢 " + (i+1)); }
+$("add-choice").onclick = ()=>{ addChoiceRow("",false); $("choices").lastChild.querySelector("input[type=text]").focus(); };
+
+function clearFields(){
+  $("f-q").value = ""; $("f-answer").value = ""; $("f-note").value = "";
+  $("choices").innerHTML = "";
+  for(let i=0;i<4;i++) addChoiceRow("", false);
+  $("form-err").textContent = "";
+}
+function fillFolderSelect(sel, selected){
+  sel.innerHTML = "";
+  flatTree().forEach(({f,depth})=> sel.append(el("option",{value:f.id}, "　".repeat(depth) + f.name)));
+  if(selected) sel.value = selected;
+}
+function openAddForm(){
+  editingId = null;
+  $("form-title").textContent = "問題を追加";
+  $("save-q").textContent = "追加する";
+  $("form-where").textContent = "📁 " + pathText(curFolder);
+  $("move-wrap").classList.add("hidden");
+  clearFields();
+  $("form-card").classList.remove("hidden");
+  $("form-card").scrollIntoView({behavior:"smooth", block:"start"});
+  $("f-q").focus({preventScroll:true});
+}
+$("add-q-btn").onclick = openAddForm;
+function closeForm(){ editingId = null; $("form-card").classList.add("hidden"); $("form-ok").textContent=""; }
+$("cancel-edit").onclick = closeForm;
+
+function fillForm(it){
+  editingId = it.id;
+  $("form-title").textContent = "問題を編集";
+  $("save-q").textContent = "変更を保存";
+  $("form-where").textContent = "";
+  $("move-wrap").classList.remove("hidden");
+  fillFolderSelect($("f-folder"), it.folderId);
+  setType(it.type);
+  $("f-q").value = it.q;
+  $("f-note").value = it.note || "";
+  $("choices").innerHTML = "";
+  if(it.type === "choice"){ it.choices.forEach((c,i)=> addChoiceRow(c, i===it.answer)); $("f-answer").value=""; }
+  else { for(let i=0;i<4;i++) addChoiceRow("",false); $("f-answer").value = (it.answers||[]).join("\n"); }
+  $("form-err").textContent = ""; $("form-ok").textContent = "";
+  $("form-card").classList.remove("hidden");
+  $("form-card").scrollIntoView({behavior:"smooth", block:"start"});
+  $("f-q").focus({preventScroll:true});
+}
+
+$("save-q").onclick = ()=>{
+  const err = $("form-err"); err.textContent = "";
+  const q = $("f-q").value.trim();
+  if(!q){ err.textContent = "問題文を入力してください"; $("f-q").focus(); return; }
+  const base = { q, note: $("f-note").value.trim(), type: formType };
+  if(formType === "choice"){
+    const rows = [...$("choices").children];
+    const list = []; let ans = -1;
+    rows.forEach(r=>{
+      const v = r.querySelector("input[type=text]").value.trim();
+      const c = r.querySelector("input[type=radio]").checked;
+      if(v){ if(c) ans = list.length; list.push(v); }
+      else if(c){ ans = -2; }
+    });
+    if(list.length < 2){ err.textContent = "選択肢を2つ以上入力してください"; return; }
+    if(ans === -2){ err.textContent = "正解に選んだ選択肢が空欄です"; return; }
+    if(ans < 0){ err.textContent = "正解の選択肢に ● をつけてください"; return; }
+    base.choices = list; base.answer = ans;
+  }else{
+    const answers = $("f-answer").value.split(/\n/).map(s=>s.trim()).filter(Boolean);
+    if(!answers.length){ err.textContent = "正解を入力してください"; $("f-answer").focus(); return; }
+    base.answers = answers;
+  }
+  if(editingId){
+    const it = state.items.find(i=>i.id===editingId);
+    if(it){
+      delete it.choices; delete it.answer; delete it.answers;
+      Object.assign(it, base);
+      const fid = $("f-folder").value; if(folderById(fid)) it.folderId = fid;
+    }
+    persist();
+    closeForm();
+    renderBrowser();
+    return;
+  }
+  if(!curFolder || !folderById(curFolder)){ err.textContent = "先にフォルダを開いてください"; return; }
+  state.items.push(Object.assign({ id: uid(), folderId: curFolder, created: Date.now() }, base));
+  persist();
+  clearFields();
+  $("form-ok").textContent = "追加しました（このフォルダ " + state.items.filter(i=>i.folderId===curFolder).length + "問目）";
+  setTimeout(()=> $("form-ok").textContent = "", 2500);
+  $("f-q").focus();
+  renderBrowser();
+};
+
+/* ---------- バックアップ ---------- */
+$("export").onclick = ()=>{
+  const root = curFolder;
+  const ids = root ? descendantIds(root) : state.folders.map(f=>f.id);
+  const set = new Set(ids);
+  const rel = fid => { const p = pathOf(fid); const i = root ? p.findIndex(x=>x.id===root)+1 : 0; return p.slice(i).map(x=>x.name); };
+  const folders = state.folders.filter(f=>set.has(f.id) && f.id!==root).map(f=>rel(f.id));
+  const items = state.items.filter(i=>set.has(i.folderId)).map(({id,created,ok,ng,last,folderId,...rest})=>Object.assign({path: rel(folderId)}, rest));
+  $("io").value = JSON.stringify({ folders, items }, null, 1);
+  $("io-msg").textContent = (root ? "「" + folderById(root).name + "」の" : "すべての") + items.length + "問を書き出しました。";
+};
+$("copy").onclick = async ()=>{
+  const ta = $("io");
+  if(!ta.value) $("export").onclick();
+  try{ await navigator.clipboard.writeText(ta.value); $("io-msg").textContent = "コピーしました"; }
+  catch(e){ ta.select(); $("io-msg").textContent = "選択しました。⌘C / Ctrl+C でコピーしてください"; }
+};
+function ensurePath(base, names){
+  let pid = base;
+  for(const nm of names){
+    const name = String(nm).trim(); if(!name) continue;
+    let f = childFolders(pid).find(x=>x.name===name);
+    if(!f){ f = { id: uid(), name, parent: pid, created: Date.now() }; state.folders.push(f); }
+    pid = f.id;
+  }
+  return pid;
+}
+$("import-add").onclick = ()=>{
+  const msg = $("io-msg");
+  let d;
+  try{ d = JSON.parse($("io").value); }catch(e){ msg.textContent = "読み込めませんでした（形式が正しくありません）"; return; }
+  let items = Array.isArray(d) ? d : (d && Array.isArray(d.items) ? d.items : null);
+  if(!items){ msg.textContent = "読み込めませんでした"; return; }
+  if(d.folders && Array.isArray(d.folders)) d.folders.forEach(p=>{ if(Array.isArray(p) && (curFolder || p.length)) ensurePath(curFolder, p); });
+  let n = 0;
+  items.forEach(r=>{
+    if(!r || typeof r.q !== "string" || !r.q.trim()) return;
+    const path = Array.isArray(r.path) ? r.path : (r.subject ? [r.subject] : []);
+    if(!curFolder && !path.length) path.push("読み込み");
+    const it = { id: uid(), created: Date.now()+n, q: r.q.trim(), note: String(r.note||"") };
+    if(r.type === "choice" && Array.isArray(r.choices) && r.choices.length>=2 && Number.isInteger(r.answer) && r.answer>=0 && r.answer<r.choices.length){
+      it.type = "choice"; it.choices = r.choices.map(String); it.answer = r.answer;
+    }else if(r.type === "text" && Array.isArray(r.answers) && r.answers.length){
+      it.type = "text"; it.answers = r.answers.map(String);
+    }else return;
+    it.folderId = ensurePath(curFolder, path);
+    state.items.push(it); n++;
+  });
+  msg.textContent = n + "問を追加しました。";
+  persist(); renderBrowser();
+};
+
+/* ---------- 学習：設定 ---------- */
+function renderSetup(){
+  const sel = $("s-folder"); const cur = sel.value;
+  sel.innerHTML = "";
+  sel.append(el("option",{value:""},"すべてのフォルダ"));
+  flatTree().forEach(({f,depth})=> sel.append(el("option",{value:f.id}, "　".repeat(depth) + f.name + "（" + countIn(f.id) + "問）")));
+  if([...sel.options].some(o=>o.value===cur)) sel.value = cur;
+  updateAvail();
+}
+function pool(){
+  const fid = $("s-folder").value, type = $("s-type").value, range = $("s-range").value;
+  let set = null;
+  if(fid){ set = new Set($("s-sub").checked ? descendantIds(fid) : [fid]); }
+  return state.items.filter(it=>{
+    if(set && !set.has(it.folderId)) return false;
+    if(type !== "all" && it.type !== type) return false;
+    const sx = st(it), tot = sx.ok + sx.ng;
+    if(range === "wrong" && sx.last !== false) return false;
+    if(range === "weak" && !(tot>0 && sx.ok/tot < 0.7)) return false;
+    if(range === "new" && tot>0) return false;
+    return true;
+  });
+}
+function updateAvail(){
+  const n = pool().length;
+  $("avail").textContent = state.items.length ? "対象：" + n + "問" : "先に「問題をつくる」で問題を追加してください";
+  $("start").disabled = n === 0;
+}
+["s-folder","s-sub","s-type","s-range","s-num"].forEach(id=> $(id).addEventListener("change", updateAvail));
+
+$("start").onclick = ()=>{
+  let list = pool();
+  if($("s-random").checked) list = shuffle(list);
+  else list = list.slice().sort((a,b)=>{
+    const pa = pathText(a.folderId), pb = pathText(b.folderId);
+    return pa===pb ? (a.created||0)-(b.created||0) : pa.localeCompare(pb,"ja",{numeric:true});
+  });
+  const num = +$("s-num").value;
+  if(num) list = list.slice(0, num);
+  startQuiz(list.map(i=>i.id));
+};
+
+/* ---------- 学習：出題 ---------- */
+let quiz = null;
+function startQuiz(ids){
+  if(!ids.length) return;
+  quiz = { ids, pos: 0, results: [], answered: false };
+  $("setup").classList.add("hidden");
+  $("result").classList.add("hidden");
+  $("quiz").classList.remove("hidden");
+  showQ();
+}
+function curItem(){ return state.items.find(i=>i.id===quiz.ids[quiz.pos]); }
+
+function showQ(){
+  let it = curItem();
+  while(!it && quiz.pos < quiz.ids.length){ quiz.pos++; it = curItem(); }
+  if(!it){ return finish(); }
+  quiz.answered = false;
+  const total = quiz.ids.length;
+  $("prog-bar").style.width = (quiz.pos/total*100) + "%";
+  $("q-pos").textContent = (quiz.pos+1) + " / " + total;
+  $("q-subj").textContent = pathText(it.folderId);
+  $("q-text").textContent = it.q;
+  $("fb").className = "fb"; $("fb-override").classList.add("hidden");
+  $("q-next").classList.add("hidden");
+  const opts = $("q-opts"); opts.innerHTML = "";
+  const hover = window.matchMedia("(hover:hover)").matches;
+  if(it.type === "choice"){
+    $("q-textans").classList.add("hidden");
+    opts.classList.remove("hidden");
+    let order = it.choices.map((_,i)=>i);
+    if($("s-shuffle").checked) order = shuffle(order);
+    quiz.order = order;
+    order.forEach((ci, k)=>{
+      opts.append(el("button",{class:"opt",type:"button","data-ci":ci, onclick:()=>answerChoice(ci)},
+        el("span",{class:"k"}, String(k+1)), el("span",null, it.choices[ci])));
+    });
+    $("kbd-hint").textContent = hover ? "キーボード：数字キーで選択 / Enterで次へ" : "";
+  }else{
+    opts.classList.add("hidden");
+    $("q-textans").classList.remove("hidden");
+    const inp = $("q-input"); inp.value = ""; inp.disabled = false;
+    $("q-check").disabled = false; $("q-giveup").disabled = false;
+    setTimeout(()=>inp.focus(), 30);
+    $("kbd-hint").textContent = hover ? "Enterで答え合わせ / もう一度Enterで次へ" : "";
+  }
+}
+
+function record(it, ok, yours){
+  const sx = st(it);
+  stats[it.id] = { ok: sx.ok + (ok?1:0), ng: sx.ng + (ok?0:1), last: ok };
+  quiz.results.push({ id: it.id, ok, yours });
+  saveStats();
+}
+
+function answerChoice(ci){
+  if(quiz.answered) return;
+  quiz.answered = true;
+  const it = curItem();
+  const ok = ci === it.answer;
+  document.querySelectorAll("#q-opts .opt").forEach(b=>{
+    b.disabled = true;
+    const c = +b.dataset.ci;
+    if(c === it.answer) b.classList.add("correct");
+    else if(c === ci) b.classList.add("wrong");
+  });
+  record(it, ok, it.choices[ci]);
+  showFb(it, ok);
+}
+
+function checkText(giveup){
+  if(quiz.answered) return;
+  const it = curItem();
+  const v = $("q-input").value;
+  if(!giveup && !v.trim()){ $("q-input").focus(); return; }
+  quiz.answered = true;
+  const ok = !giveup && it.answers.some(a=> norm(a) === norm(v));
+  $("q-input").disabled = true; $("q-check").disabled = true; $("q-giveup").disabled = true;
+  record(it, ok, giveup ? "（わからない）" : v.trim());
+  showFb(it, ok);
+  if(!ok && !giveup) $("fb-override").classList.remove("hidden");
+}
+$("q-check").onclick = ()=> checkText(false);
+$("q-giveup").onclick = ()=> checkText(true);
+$("q-input").addEventListener("keydown", e=>{
+  if(e.key === "Enter" && !e.isComposing){ e.preventDefault(); if(!quiz.answered) checkText(false); else next(); }
+});
+$("fb-override").onclick = ()=>{
+  const it = curItem();
+  const r = quiz.results[quiz.results.length-1];
+  if(!r || r.ok) return;
+  r.ok = true;
+  const sx = st(it);
+  stats[it.id] = { ok: sx.ok + 1, ng: Math.max(0, sx.ng - 1), last: true };
+  saveStats();
+  showFb(it, true);
+  $("fb-override").classList.add("hidden");
+};
+
+function showFb(it, ok){
+  const fb = $("fb");
+  fb.className = "fb show " + (ok ? "ok" : "ng");
+  $("fb-ttl").textContent = ok ? "正解！" : "不正解";
+  $("fb-ans").textContent = it.type === "text" ? "正解：" + it.answers.join(" / ") : (ok ? "" : "正解：" + it.choices[it.answer]);
+  $("fb-note").textContent = it.note || "";
+  const nb = $("q-next");
+  nb.textContent = quiz.pos === quiz.ids.length-1 ? "結果を見る" : "次へ";
+  nb.classList.remove("hidden");
+  if(it.type === "choice") nb.focus({preventScroll:true});
+}
+
+function next(){ if(!quiz || !quiz.answered) return; quiz.pos++; if(quiz.pos >= quiz.ids.length) finish(); else showQ(); }
+$("q-next").onclick = next;
+
+document.addEventListener("keydown", e=>{
+  if(!quiz || $("quiz").classList.contains("hidden")) return;
+  if(e.target && e.target.id === "q-input") return;
+  const it = curItem(); if(!it) return;
+  if(!quiz.answered && it.type === "choice" && /^[1-9]$/.test(e.key)){
+    const k = +e.key - 1;
+    if(quiz.order && k < quiz.order.length){ e.preventDefault(); answerChoice(quiz.order[k]); }
+  }else if(quiz.answered && e.key === "Enter" && document.activeElement !== $("q-next")){
+    e.preventDefault(); next();
+  }
+});
+
+$("q-quit").onclick = ()=>{ if(quiz && quiz.results.length) finish(); else backToSetup(); };
+
+function finish(){
+  $("quiz").classList.add("hidden");
+  $("result").classList.remove("hidden");
+  const rs = quiz.results;
+  const okN = rs.filter(r=>r.ok).length;
+  const pct = rs.length ? Math.round(okN/rs.length*100) : 0;
+  $("r-score").innerHTML = "";
+  $("r-score").append(String(pct), el("small",null,"%"));
+  $("r-detail").textContent = rs.length + "問中 " + okN + "問正解" + (rs.length < quiz.ids.length ? "（途中で終了）" : "");
+  const wrong = rs.filter(r=>!r.ok);
+  const wl = $("r-wrong"); wl.innerHTML = "";
+  $("r-wrong-wrap").classList.toggle("hidden", !wrong.length);
+  $("r-retry").classList.toggle("hidden", !wrong.length);
+  wrong.forEach(r=>{
+    const it = state.items.find(i=>i.id===r.id); if(!it) return;
+    wl.append(el("div",{class:"w"},
+      el("div",{class:"hint",style:"margin:0"}, pathText(it.folderId)),
+      el("div",{style:"white-space:pre-wrap"}, it.q),
+      el("div",{class:"yours"}, "あなたの答え：" + (r.yours||"")),
+      el("div",{class:"right"}, "正解：" + answerText(it)),
+      it.note ? el("div",{class:"hint"}, it.note) : null
+    ));
+  });
+  quiz.wrongIds = wrong.map(r=>r.id);
+}
+$("r-retry").onclick = ()=>{
+  const ids = quiz.wrongIds || [];
+  startQuiz($("s-random").checked ? shuffle(ids) : ids);
+};
+$("r-back").onclick = backToSetup;
+function backToSetup(){
+  quiz = null;
+  $("quiz").classList.add("hidden");
+  $("result").classList.add("hidden");
+  $("setup").classList.remove("hidden");
+  renderSetup();
+}
+
+function refreshAll(){
+  applyMode();
+  renderBrowser();
+  if(!quiz) renderSetup();
+}
+
+/* ---------- 起動 ---------- */
+loadLocal();
+clearFields();
+refreshAll();
+connect();
+})();
+</script>
+</body>
+</html>
